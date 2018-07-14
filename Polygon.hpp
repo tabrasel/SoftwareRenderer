@@ -4,15 +4,16 @@
 #include <stdio.h>
 #include <SFML/Graphics.hpp>
 #include "Vertex.hpp"
+#include <array>
 
 class Polygon
 {
     private:
-    Vertex vertices[3];
+        std::array<Vertex, 3> vertices;
     
     public:
         Polygon();
-        Vertex* getVertices;
+        std::array<Vertex, 3>& getVertices();
 };
 
 #endif

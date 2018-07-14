@@ -10,3 +10,8 @@ Polygon::Polygon()
     vertices[1] = Vertex(point2);
     vertices[2] = Vertex(point3);
 }
+
+std::array<Vertex, 3>& Polygon::getVertices()
+{
+    return vertices;
+}

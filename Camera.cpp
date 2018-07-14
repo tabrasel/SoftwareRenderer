@@ -11,13 +11,14 @@ Camera::Camera()
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     nearPlane = 0.1;
     
-    sf::Vector3f point1(1, 5, 6);
-    sf::Vector3f point2(-1, 2,3);
-    sf::Vector3f point3(3, 1, 1);
+    sf::Vector3f point1(0, 5, 6);
+    sf::Vector3f point2(-2, 2, 3);
+    sf::Vector3f point3(2, 1, -1);
     
-    vertices[0] = Vertex(point1);
+    // Reverse order just for fun
+    vertices[0] = Vertex(point3);
     vertices[1] = Vertex(point2);
-    vertices[2] = Vertex(point3);
+    vertices[2] = Vertex(point1);
 }
 
 void Camera::update()
@@ -98,13 +99,41 @@ void Camera::viewScene()
         return;
     }
     
+    Vertex* top = &vertices[0];
+    Vertex* mid = &vertices[1];
+    Vertex* bot = &vertices[2];
+    
+    if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
+        Vertex* temp = mid;
+        mid = bot;
+        bot = temp;
+    }
+    if (mid->getScreenPosition().y < top->getScreenPosition().y) {
+        Vertex* temp = top;
+        top = mid;
+        mid = temp;
+    }
+    if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
+        Vertex* temp = mid;
+        mid = bot;
+        bot = temp;
+    }
+    
     // Create edges
-    Edge topToMid = Edge(vertices[0], vertices[1]);
-    Edge midToBot = Edge(vertices[1], vertices[2]);
-    Edge topToBot = Edge(vertices[0], vertices[2]);
+    Edge topToMid = Edge(*top, *mid);
+    Edge midToBot = Edge(*mid, *bot);
+    Edge topToBot = Edge(*top, *bot);
+    
+    // Is the long side on the left?
+    bool isLeftHanded = polygonLeftHanded(*top, *mid, *bot);
     
     Edge* leftEdge = &topToMid;
     Edge* rightEdge = &topToBot;
+    if (!isLeftHanded)
+    {
+        leftEdge = &topToBot;
+        rightEdge = &topToMid;
+    }
     
     sf::Color fillColor(0, 0, 255);
     
@@ -138,6 +167,11 @@ void Camera::viewScene()
     
     leftEdge = &midToBot;
     rightEdge = &topToBot;
+    if (!isLeftHanded)
+    {
+        leftEdge = &topToBot;
+        rightEdge = &midToBot;
+    }
     
     // Draw bottom triangle
     for (int y = (int)midToBot.getStartY(); y < (int)midToBot.getEndY(); y++)
@@ -194,19 +228,7 @@ bool Camera::polygonLeftHanded(Vertex& top, Vertex& middle, Vertex& bottom)
     sf::Vector2f topToMiddle = middle.getScreenPosition() - top.getScreenPosition();
     sf::Vector2f topToBottom = bottom.getScreenPosition() - top.getScreenPosition();
     
-    return topToMiddle.x * topToBottom.y - topToBottom.x * topToMiddle.y;
-    
-    
-
-    /*
-     PVector bCanvasPos = b.getScreenPos();
-     PVector cCanvasPos = c.getScreenPos();
-     float x1 = bCanvasPos.x - screenPos.x;
-     float y1 = bCanvasPos.y - screenPos.y;
-     float x2 = cCanvasPos.x - screenPos.x;
-     float y2 = cCanvasPos.y - screenPos.y;
-     return (x1 * y2 - x2 * y1);
-     */
+    return (topToMiddle.x * topToBottom.y - topToBottom.x * topToMiddle.y) < 0;
 }
 
 sf::Vector3f& Camera::getPosition()
