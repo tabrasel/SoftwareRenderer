@@ -6,6 +6,7 @@
 #include <array>
 #include "Polygon.hpp"
 #include "Vertex.hpp"
+#include "Scene.hpp"
 
 class Camera
 {
@@ -15,13 +16,12 @@ class Camera
         sf::Texture view;
         sf::Vector2f viewSize;
         Polygon triangle;
-        std::array<Vertex, 3> vertices;
         double nearPlane;
     
     public:
         Camera();
         void update();
-        void viewScene();
+        void viewScene(Scene& scene);
         void clearView();
         void putPixel(int x, int y, sf::Color& color);
         bool polygonLeftHanded(Vertex& top, Vertex& v2, Vertex& v3);

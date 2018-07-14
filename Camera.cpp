@@ -1,5 +1,6 @@
 #include "Camera.hpp"
 #include "Edge.hpp"
+#include "Scene.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -10,15 +11,6 @@ Camera::Camera()
     viewSize = sf::Vector2f(400, 250);
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     nearPlane = 0.1;
-    
-    sf::Vector3f point1(0, 5, 6);
-    sf::Vector3f point2(-2, 2, 3);
-    sf::Vector3f point3(2, 1, -1);
-    
-    // Reverse order just for fun
-    vertices[0] = Vertex(point3);
-    vertices[1] = Vertex(point2);
-    vertices[2] = Vertex(point1);
 }
 
 void Camera::update()
@@ -61,8 +53,10 @@ void Camera::clearView()
     }
 }
 
-void Camera::viewScene()
+void Camera::viewScene(Scene& scene)
 {
+    std::array<Vertex, 3> vertices = scene.getPolygon().getVertices();
+    
     // Draw grid
     for (double z = -2; z <= 2; z += 0.2)
     {

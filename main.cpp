@@ -2,9 +2,11 @@
 #include "ResourcePath.hpp"
 #include <iostream>
 #include "Camera.hpp"
+#include "Scene.hpp"
 
 int main(int, char const**)
 {
+    Scene scene;
     Camera camera;
     
     sf::Clock clock;
@@ -44,7 +46,7 @@ int main(int, char const**)
         
         camera.update();
         camera.clearView();
-        camera.viewScene();
+        camera.viewScene(scene);
         
         window.clear();
         screen.update(camera.getPixels());
