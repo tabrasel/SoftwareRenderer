@@ -1,6 +1,7 @@
 #include "Camera.hpp"
 #include "Edge.hpp"
 #include "Scene.hpp"
+#include "Quaternion.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -8,13 +9,22 @@
 Camera::Camera()
 {
     position = sf::Vector3f(0.0, 1.0, -4.0);
+    angle = sf::Vector3f(0.0, 0.0, 0.0);
     viewSize = sf::Vector2f(400, 250);
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
+    zBuffer = new double[int(viewSize.x * viewSize.y)];
     nearPlane = 0.1;
+}
+
+Camera::~Camera()
+{
+    delete pixels;
+    delete zBuffer;
 }
 
 void Camera::update()
 {
+    // Position
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
         position += sf::Vector3f(0.0, 0.0, 0.05);
@@ -39,6 +49,24 @@ void Camera::update()
     {
         position += sf::Vector3f(0.0, -0.05, 0.0);
     }
+    
+    // Angle
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+    {
+        angle += sf::Vector3f(0.0, 0.02, 0.0);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+    {
+        angle += sf::Vector3f(0.0, -0.02, 0.0);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+    {
+        angle += sf::Vector3f(0.02, 0.0, 0.0);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+    {
+        angle += sf::Vector3f(-0.02, 0.0, -0.0);
+    }
 }
 
 void Camera::clearView()
@@ -57,35 +85,46 @@ void Camera::viewScene(Scene& scene)
 {
     std::array<Vertex, 3> vertices = scene.getPolygon().getVertices();
     
+    sf::Vector3f yawAxis = sf::Vector3f(0.0, 1.0, 0.0);
+    sf::Vector3f pitchAxis = sf::Vector3f(1.0, 0.0, 0.0);
+    Quaternion yawRot = Quaternion(yawAxis, angle.y);
+    Quaternion pitchRot = Quaternion(pitchAxis, angle.x);
+    
     // Draw grid
-    for (double z = -2; z <= 2; z += 0.2)
+    for (double z = -10; z <= 10; z += 1)
     {
-        for (double x = -2; x <= 2; x += 0.2)
+        for (double x = -10; x <= 10; x += 1)
         {
-            double camX = x - position.x;
-            double camY = 0 - position.y;
-            double camZ = z - position.z;
-            double screenX = viewSize.x / 2 + (camX / camZ) * viewSize.x / 2;
-            double screenY = viewSize.y / 2 - (camY / camZ) * viewSize.y / 2;
-            if (camZ > 0) {
+            sf::Vector3f relPos = sf::Vector3f(x - position.x, 0 - position.y, z - position.z);
+            sf::Vector3f* camPos = yawRot.rotateVector(relPos);
+            sf::Vector3f cameraPosition = *camPos;
+            camPos = pitchRot.rotateVector(cameraPosition);
+            cameraPosition = *camPos;
+            
+            sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (cameraPosition.x / cameraPosition.z) * viewSize.x / 2,
+                                                       viewSize.y / 2 - (cameraPosition.y / cameraPosition.z) * viewSize.y / 2);
+            if (cameraPosition.z > 0) {
                 sf::Color color(0, 0, 0);
-                putPixel(screenX, screenY, color);
+                putPixel((int)screenPosition.x, (int)screenPosition.y, color);
             }
+            delete camPos;
         }
     }
     
     // Transform vertices to camera and screen coordinates
     for (int i = 0; i < vertices.size(); i++)
     {
-        double camX = vertices[i].getWorldPosition().x - position.x;
-        double camY = vertices[i].getWorldPosition().y - position.y;
-        double camZ = vertices[i].getWorldPosition().z - position.z;
+        sf::Vector3f relPos = vertices[i].getWorldPosition() - position;
+        sf::Vector3f* camPos = yawRot.rotateVector(relPos);
+        sf::Vector3f cameraPosition = *camPos;
+        camPos = pitchRot.rotateVector(cameraPosition);
+        cameraPosition = *camPos;
         
-        sf::Vector3f cameraPosition = vertices[i].getWorldPosition() - position;
         vertices[i].setCameraPosition(cameraPosition);
         sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (cameraPosition.x / cameraPosition.z) * viewSize.x / 2,
                                                    viewSize.y / 2 - (cameraPosition.y / cameraPosition.z) * viewSize.y / 2);
         vertices[i].setScreenPosition(screenPosition);
+        delete camPos;
     }
     
     if (vertices[0].getCameraPosition().z <= nearPlane || vertices[1].getCameraPosition().z <= nearPlane || vertices[2].getCameraPosition().z <= nearPlane)

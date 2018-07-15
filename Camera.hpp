@@ -11,15 +11,16 @@
 class Camera
 {
     private:
-        sf::Vector3f position;
+        sf::Vector3f position, angle;
         sf::Uint8* pixels;
+        double* zBuffer;
         sf::Texture view;
         sf::Vector2f viewSize;
-        Polygon triangle;
         double nearPlane;
     
     public:
         Camera();
+        ~Camera();
         void update();
         void viewScene(Scene& scene);
         void clearView();

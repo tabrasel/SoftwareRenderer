@@ -24,7 +24,7 @@ int main(int, char const**)
     const int CANVAS_WIDTH = 400;
     const int CANVAS_HEIGHT = 250;
     
-    sf::RenderWindow window(sf::VideoMode(CANVAS_WIDTH, CANVAS_HEIGHT), "SFML window");
+    sf::RenderWindow window(sf::VideoMode(CANVAS_WIDTH, CANVAS_HEIGHT), "Software Renderer");
     window.setVerticalSyncEnabled(true);
 
     sf::Texture screen;
