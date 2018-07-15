@@ -14,6 +14,8 @@ Camera::Camera()
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
     nearPlane = 0.1;
+    sf::Mouse::setPosition(sf::Vector2i(1280, 800));
+    lastMousePos = sf::Vector2i(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
 }
 
 Camera::~Camera()
@@ -65,8 +67,22 @@ void Camera::update()
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
     {
-        angle += sf::Vector3f(-0.02, 0.0, -0.0);
+        angle += sf::Vector3f(-0.02, 0.0, 0.0);
     }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
+    {
+        angle += sf::Vector3f(0.0, 0.0, -0.05);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
+    {
+        angle += sf::Vector3f(0.0, 0.0, 0.05);
+    }
+    
+    sf::Vector2i mouseDelta(sf::Mouse::getPosition().x - 1280, sf::Mouse::getPosition().y - 1600 - 800);
+    lastMousePos.x = sf::Mouse::getPosition().x;
+    lastMousePos.y = sf::Mouse::getPosition().y;
+    angle += sf::Vector3f(-mouseDelta.y * 0.002, -mouseDelta.x * 0.002, 0.0);
+    sf::Mouse::setPosition(sf::Vector2i(1280, 800));
 }
 
 void Camera::clearView()
@@ -87,8 +103,10 @@ void Camera::viewScene(Scene& scene)
     
     sf::Vector3f yawAxis = sf::Vector3f(0.0, 1.0, 0.0);
     sf::Vector3f pitchAxis = sf::Vector3f(1.0, 0.0, 0.0);
+    sf::Vector3f rollAxis = sf::Vector3f(0.0, 0.0, 1.0);
     Quaternion yawRot = Quaternion(yawAxis, angle.y);
     Quaternion pitchRot = Quaternion(pitchAxis, angle.x);
+    Quaternion rollRot = Quaternion(rollAxis, angle.z);
     
     // Draw grid
     for (double z = -10; z <= 10; z += 1)
@@ -99,6 +117,8 @@ void Camera::viewScene(Scene& scene)
             sf::Vector3f* camPos = yawRot.rotateVector(relPos);
             sf::Vector3f cameraPosition = *camPos;
             camPos = pitchRot.rotateVector(cameraPosition);
+            cameraPosition = *camPos;
+            camPos = rollRot.rotateVector(cameraPosition);
             cameraPosition = *camPos;
             
             sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (cameraPosition.x / cameraPosition.z) * viewSize.x / 2,
@@ -118,6 +138,8 @@ void Camera::viewScene(Scene& scene)
         sf::Vector3f* camPos = yawRot.rotateVector(relPos);
         sf::Vector3f cameraPosition = *camPos;
         camPos = pitchRot.rotateVector(cameraPosition);
+        cameraPosition = *camPos;
+        camPos = rollRot.rotateVector(cameraPosition);
         cameraPosition = *camPos;
         
         vertices[i].setCameraPosition(cameraPosition);

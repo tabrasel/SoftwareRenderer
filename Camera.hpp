@@ -17,6 +17,7 @@ class Camera
         sf::Texture view;
         sf::Vector2f viewSize;
         double nearPlane;
+        sf::Vector2i lastMousePos;
     
     public:
         Camera();
