@@ -26,6 +26,7 @@ int main(int, char const**)
     
     sf::RenderWindow window(sf::VideoMode(CANVAS_WIDTH, CANVAS_HEIGHT), "Software Renderer");
     window.setVerticalSyncEnabled(true);
+    window.setMouseCursorVisible(false);
 
     sf::Texture screen;
     screen.create(CANVAS_WIDTH, CANVAS_HEIGHT);

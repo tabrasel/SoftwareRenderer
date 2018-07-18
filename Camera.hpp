@@ -7,11 +7,13 @@
 #include "Polygon.hpp"
 #include "Vertex.hpp"
 #include "Scene.hpp"
+#include "Edge.hpp"
 
 class Camera
 {
     private:
         sf::Vector3f position, angle;
+        sf::Vector3f forward;
         sf::Uint8* pixels;
         double* zBuffer;
         sf::Texture view;
@@ -25,6 +27,7 @@ class Camera
         void update();
         void viewScene(Scene& scene);
         void clearView();
+        void drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge);
         void putPixel(int x, int y, sf::Color& color);
         bool polygonLeftHanded(Vertex& top, Vertex& v2, Vertex& v3);
         sf::Vector3f& getPosition();

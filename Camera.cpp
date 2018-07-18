@@ -1,6 +1,4 @@
 #include "Camera.hpp"
-#include "Edge.hpp"
-#include "Scene.hpp"
 #include "Quaternion.hpp"
 
 #include <iostream>
@@ -10,7 +8,8 @@ Camera::Camera()
 {
     position = sf::Vector3f(0.0, 1.0, -4.0);
     angle = sf::Vector3f(0.0, 0.0, 0.0);
-    viewSize = sf::Vector2f(400, 250);
+    forward = sf::Vector3f(0.0, 0.0, 1.0);
+    viewSize = sf::Vector2f(400, 255);
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
     nearPlane = 0.1;
@@ -26,14 +25,31 @@ Camera::~Camera()
 
 void Camera::update()
 {
+    sf::Vector3f yawAxis = sf::Vector3f(0.0, 1.0, 0.0);
+    sf::Vector3f pitchAxis = sf::Vector3f(1.0, 0.0, 0.0);
+    sf::Vector3f rollAxis = sf::Vector3f(0.0, 0.0, 1.0);
+    
+    Quaternion yawRot = Quaternion(yawAxis, angle.y);
+    Quaternion pitchRot = Quaternion(pitchAxis, angle.x);
+    Quaternion rollRot = Quaternion(rollAxis, angle.z);
+    
+    sf::Vector3f* newForward = rollRot.rotateVector(forward);
+    newForward = pitchRot.rotateVector(*newForward);
+    newForward = yawRot.rotateVector(*newForward);
+    forward = *newForward;
+    
     // Position
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
-        position += sf::Vector3f(0.0, 0.0, 0.05);
+        position.x += forward.x * 0.05;
+        position.y += forward.y * 0.05;
+        position.z += forward.z * 0.05;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
     {
-        position += sf::Vector3f(0.0, 0.0, -0.05);
+        position.x += forward.x * -0.05;
+        position.y += forward.y * -0.05;
+        position.z += forward.z * -0.05;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
     {
@@ -71,28 +87,36 @@ void Camera::update()
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
     {
-        angle += sf::Vector3f(0.0, 0.0, -0.05);
+        angle += sf::Vector3f(0.0, 0.0, 0.05);
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
     {
-        angle += sf::Vector3f(0.0, 0.0, 0.05);
+        angle += sf::Vector3f(0.0, 0.0, -0.05);
     }
     
-    sf::Vector2i mouseDelta(sf::Mouse::getPosition().x - 1280, sf::Mouse::getPosition().y - 1600 - 800);
-    lastMousePos.x = sf::Mouse::getPosition().x;
-    lastMousePos.y = sf::Mouse::getPosition().y;
-    angle += sf::Vector3f(-mouseDelta.y * 0.002, -mouseDelta.x * 0.002, 0.0);
-    sf::Mouse::setPosition(sf::Vector2i(1280, 800));
+    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::T))
+    {
+        sf::Vector2i mouseDelta(sf::Mouse::getPosition().x - 1280, sf::Mouse::getPosition().y - 1600 - 800);
+        lastMousePos.x = sf::Mouse::getPosition().x;
+        lastMousePos.y = sf::Mouse::getPosition().y;
+        angle += sf::Vector3f(mouseDelta.y * 0.002, mouseDelta.x * 0.002, 0.0);
+        sf::Mouse::setPosition(sf::Vector2i(1280, 800));
+    }
+    
+    forward = sf::Vector3f(0.0, 0.0, 1.0);
 }
 
 void Camera::clearView()
 {
+    sf::Color color(255, 255, 255);
+    int index = 0;
     for (int y = 0; y < viewSize.y; y++)
     {
         for (int x = 0; x < viewSize.x; x++)
         {
-            sf::Color color(255, 255, 255);
             putPixel(x, y, color);
+            zBuffer[index] = 99999;
+            index++;
         }
     }
 }
@@ -104,9 +128,10 @@ void Camera::viewScene(Scene& scene)
     sf::Vector3f yawAxis = sf::Vector3f(0.0, 1.0, 0.0);
     sf::Vector3f pitchAxis = sf::Vector3f(1.0, 0.0, 0.0);
     sf::Vector3f rollAxis = sf::Vector3f(0.0, 0.0, 1.0);
-    Quaternion yawRot = Quaternion(yawAxis, angle.y);
-    Quaternion pitchRot = Quaternion(pitchAxis, angle.x);
-    Quaternion rollRot = Quaternion(rollAxis, angle.z);
+    
+    Quaternion yawRot = Quaternion(yawAxis, -angle.y);
+    Quaternion pitchRot = Quaternion(pitchAxis, -angle.x);
+    Quaternion rollRot = Quaternion(rollAxis, -angle.z);
     
     // Draw grid
     for (double z = -10; z <= 10; z += 1)
@@ -191,34 +216,7 @@ void Camera::viewScene(Scene& scene)
     }
     
     sf::Color fillColor(0, 0, 255);
-    
-    // Draw top triangle
-    for (int y = (int)topToMid.getStartY(); y < (int)topToMid.getEndY(); y++)
-    {
-        int startX = std::ceil(leftEdge->getX() - 0.5);
-        int endX = std::ceil(rightEdge->getX() - 1.5);
-        
-        double sliceZStep = (rightEdge->getZ() - leftEdge->getZ()) / (rightEdge->getX() - leftEdge->getX());
-        double sliceZ = leftEdge->getZ() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceZStep;
-        
-        for (int x = startX; x < endX; x++)
-        {
-            double z = 1.0 / sliceZ;
-            double u = z * 20;
-            if (u < 0) {
-                u = 0;
-            }
-            if (u > 255) {
-                u = 255;
-            }
-            sf::Color fillColor(u, 0, 255);
-            putPixel(x, y, fillColor);
-            sliceZ += sliceZStep;
-        }
-        
-        leftEdge->step();
-        rightEdge->step();
-    }
+    drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
     
     leftEdge = &midToBot;
     rightEdge = &topToBot;
@@ -228,33 +226,7 @@ void Camera::viewScene(Scene& scene)
         rightEdge = &midToBot;
     }
     
-    // Draw bottom triangle
-    for (int y = (int)midToBot.getStartY(); y < (int)midToBot.getEndY(); y++)
-    {
-        int startX = std::ceil(leftEdge->getX() - 0.5);
-        int endX = std::ceil(rightEdge->getX() - 1.5);
-        
-        double sliceZStep = (rightEdge->getZ() - leftEdge->getZ()) / (rightEdge->getX() - leftEdge->getX());
-        double sliceZ = leftEdge->getZ() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceZStep;
-        
-        for (int x = startX; x < endX; x++)
-        {
-            double z = 1.0 / sliceZ;
-            double u = z * 20;
-            if (u < 0) {
-                u = 0;
-            }
-            if (u > 255) {
-                u = 255;
-            }
-            sf::Color fillColor(u, 0, 255);
-            putPixel(x, y, fillColor);
-            sliceZ += sliceZStep;
-        }
-        
-        leftEdge->step();
-        rightEdge->step();
-    }
+    drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
     
     // Draw crosshair
     sf::Color color(255, 0, 0);
@@ -262,6 +234,48 @@ void Camera::viewScene(Scene& scene)
     putPixel(201, 125, color);
     putPixel(200, 124, color);
     putPixel(200, 126, color);
+}
+
+void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge)
+{
+    for (int y = topY; y < bottomY; y++)
+    {
+        // Scanline left and right boundries
+        int startX = std::ceil(leftEdge->getX() - 0.5);
+        int endX = std::ceil(rightEdge->getX() - 1.5);
+        
+        // Scanline Z interpolants
+        double sliceZStep = (rightEdge->getZ() - leftEdge->getZ()) / (rightEdge->getX() - leftEdge->getX());
+        double sliceZ = leftEdge->getZ() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceZStep;
+        
+        for (int x = startX; x < endX; x++)
+        {
+            double z = 1.0 / sliceZ;
+            int index = y * viewSize.x + x;
+            
+            if (index >= 0 && index < viewSize.x * viewSize.y)
+            {
+                if (z < zBuffer[index]) {
+                    double u = z * 20;
+                    if (u < 0) {
+                        u = 0;
+                    }
+                    if (u > 255) {
+                        u = 255;
+                    }
+                    
+                    sf::Color fillColor(u, 0, 255);
+                    putPixel(x, y, fillColor);
+                    zBuffer[index] = z;
+                }
+            }
+            
+            sliceZ += sliceZStep;
+        }
+        
+        leftEdge->step();
+        rightEdge->step();
+    }
 }
 
 void Camera::putPixel(int x, int y, sf::Color& color)
