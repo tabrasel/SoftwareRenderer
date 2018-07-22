@@ -9,6 +9,8 @@ Camera::Camera()
     position = sf::Vector3f(0.0, 1.0, -4.0);
     angle = sf::Vector3f(0.0, 0.0, 0.0);
     forward = sf::Vector3f(0.0, 0.0, 1.0);
+    sideways = sf::Vector3f(1.0, 0.0, 0.0);
+    upward = sf::Vector3f(0.0, 1.0, 0.0);
     viewSize = sf::Vector2f(400, 255);
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
@@ -33,10 +35,17 @@ void Camera::update()
     Quaternion pitchRot = Quaternion(pitchAxis, angle.x);
     Quaternion rollRot = Quaternion(rollAxis, angle.z);
     
-    sf::Vector3f* newForward = rollRot.rotateVector(forward);
-    newForward = pitchRot.rotateVector(*newForward);
-    newForward = yawRot.rotateVector(*newForward);
-    forward = *newForward;
+    rollRot.rotateVector(forward);
+    pitchRot.rotateVector(forward);
+    yawRot.rotateVector(forward);
+    
+    rollRot.rotateVector(sideways);
+    pitchRot.rotateVector(sideways);
+    yawRot.rotateVector(sideways);
+    
+    rollRot.rotateVector(upward);
+    pitchRot.rotateVector(upward);
+    yawRot.rotateVector(upward);
     
     // Position
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
@@ -53,15 +62,24 @@ void Camera::update()
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
     {
-        position += sf::Vector3f(-0.05, 0.0, 0.0);
+        //position += sf::Vector3f(-0.05, 0.0, 0.0);
+        position.x += sideways.x * -0.05;
+        position.y += sideways.y * -0.05;
+        position.z += sideways.z * -0.05;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
     {
-        position += sf::Vector3f(0.05, 0.0, 0.0);
+        //position += sf::Vector3f(0.05, 0.0, 0.0);
+        position.x += sideways.x * 0.05;
+        position.y += sideways.y * 0.05;
+        position.z += sideways.z * 0.05;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
     {
-        position += sf::Vector3f(0.0, 0.05, 0.0);
+        //position += sf::Vector3f(0.0, 0.05, 0.0);
+        position.x += upward.x * 0.05;
+        position.y += upward.y * 0.05;
+        position.z += upward.z * 0.05;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
     {
@@ -104,6 +122,8 @@ void Camera::update()
     }
     
     forward = sf::Vector3f(0.0, 0.0, 1.0);
+    sideways = sf::Vector3f(1.0, 0.0, 0.0);
+    upward = sf::Vector3f(0.0, 1.0, 0.0);
 }
 
 void Camera::clearView()
@@ -134,44 +154,39 @@ void Camera::viewScene(Scene& scene)
     Quaternion rollRot = Quaternion(rollAxis, -angle.z);
     
     // Draw grid
-    for (double z = -10; z <= 10; z += 1)
+    for (double z = -10; z <= 10; z += 0.5)
     {
-        for (double x = -10; x <= 10; x += 1)
+        for (double x = -10; x <= 10; x += 0.5)
         {
-            sf::Vector3f relPos = sf::Vector3f(x - position.x, 0 - position.y, z - position.z);
-            sf::Vector3f* camPos = yawRot.rotateVector(relPos);
-            sf::Vector3f cameraPosition = *camPos;
-            camPos = pitchRot.rotateVector(cameraPosition);
-            cameraPosition = *camPos;
-            camPos = rollRot.rotateVector(cameraPosition);
-            cameraPosition = *camPos;
+            sf::Vector3f camPos = sf::Vector3f(x - position.x, 0 - position.y, z - position.z);
             
-            sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (cameraPosition.x / cameraPosition.z) * viewSize.x / 2,
-                                                       viewSize.y / 2 - (cameraPosition.y / cameraPosition.z) * viewSize.y / 2);
-            if (cameraPosition.z > 0) {
+            yawRot.rotateVector(camPos);
+            pitchRot.rotateVector(camPos);
+            rollRot.rotateVector(camPos);
+            
+            sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
+                                                       viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
+            
+            if (camPos.z > 0) {
                 sf::Color color(0, 0, 0);
                 putPixel((int)screenPosition.x, (int)screenPosition.y, color);
             }
-            delete camPos;
         }
     }
     
     // Transform vertices to camera and screen coordinates
     for (int i = 0; i < vertices.size(); i++)
     {
-        sf::Vector3f relPos = vertices[i].getWorldPosition() - position;
-        sf::Vector3f* camPos = yawRot.rotateVector(relPos);
-        sf::Vector3f cameraPosition = *camPos;
-        camPos = pitchRot.rotateVector(cameraPosition);
-        cameraPosition = *camPos;
-        camPos = rollRot.rotateVector(cameraPosition);
-        cameraPosition = *camPos;
+         sf::Vector3f camPos = vertices[i].getWorldPosition() - position;
+     
+         yawRot.rotateVector(camPos);
+         pitchRot.rotateVector(camPos);
+         rollRot.rotateVector(camPos);
         
-        vertices[i].setCameraPosition(cameraPosition);
-        sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (cameraPosition.x / cameraPosition.z) * viewSize.x / 2,
-                                                   viewSize.y / 2 - (cameraPosition.y / cameraPosition.z) * viewSize.y / 2);
+        vertices[i].setCameraPosition(camPos);
+        sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
+                                                   viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
         vertices[i].setScreenPosition(screenPosition);
-        delete camPos;
     }
     
     if (vertices[0].getCameraPosition().z <= nearPlane || vertices[1].getCameraPosition().z <= nearPlane || vertices[2].getCameraPosition().z <= nearPlane)

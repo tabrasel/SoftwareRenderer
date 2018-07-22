@@ -13,7 +13,7 @@ class Camera
 {
     private:
         sf::Vector3f position, angle;
-        sf::Vector3f forward;
+        sf::Vector3f forward, sideways, upward;
         sf::Uint8* pixels;
         double* zBuffer;
         sf::Texture view;
