@@ -11,7 +11,6 @@ class Quaternion
     
     public:
         Quaternion(sf::Vector3f& axis, double radians);
-        //sf::Vector3f* rotateVector(sf::Vector3f& v);
         void rotateVector(sf::Vector3f& v);
 };
 

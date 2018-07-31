@@ -13,6 +13,7 @@ class Polygon
     
     public:
         Polygon();
+        Polygon(Vertex& v1, Vertex& v2, Vertex& v3);
         std::array<Vertex, 3>& getVertices();
 };
 

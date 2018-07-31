@@ -1,5 +1,6 @@
 #include "Camera.hpp"
 #include "Quaternion.hpp"
+#include "Mesh.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -89,19 +90,19 @@ void Camera::update()
     // Angle
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
     {
-        angle += sf::Vector3f(0.0, 0.02, 0.0);
+        angle += sf::Vector3f(0.0, -0.05, 0.0);
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
     {
-        angle += sf::Vector3f(0.0, -0.02, 0.0);
+        angle += sf::Vector3f(0.0, 0.05, 0.0);
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
     {
-        angle += sf::Vector3f(0.02, 0.0, 0.0);
+        angle += sf::Vector3f(-0.05, 0.0, 0.0);
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
     {
-        angle += sf::Vector3f(-0.02, 0.0, 0.0);
+        angle += sf::Vector3f(0.05, 0.0, 0.0);
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
     {
@@ -117,8 +118,8 @@ void Camera::update()
         sf::Vector2i mouseDelta(sf::Mouse::getPosition().x - 1280, sf::Mouse::getPosition().y - 1600 - 800);
         lastMousePos.x = sf::Mouse::getPosition().x;
         lastMousePos.y = sf::Mouse::getPosition().y;
-        angle += sf::Vector3f(mouseDelta.y * 0.002, mouseDelta.x * 0.002, 0.0);
-        sf::Mouse::setPosition(sf::Vector2i(1280, 800));
+        //angle += sf::Vector3f(mouseDelta.y * 0.002, mouseDelta.x * 0.002, 0.0);
+        //sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     }
     
     forward = sf::Vector3f(0.0, 0.0, 1.0);
@@ -143,6 +144,12 @@ void Camera::clearView()
 
 void Camera::viewScene(Scene& scene)
 {
+    
+    Mesh mesh = scene.getMesh();
+    
+    /// GET VERTICES FROM THE MESH NOW HAHA SUCKER
+    
+    
     std::array<Vertex, 3> vertices = scene.getPolygon().getVertices();
     
     sf::Vector3f yawAxis = sf::Vector3f(0.0, 1.0, 0.0);
@@ -242,13 +249,6 @@ void Camera::viewScene(Scene& scene)
     }
     
     drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
-    
-    // Draw crosshair
-    sf::Color color(255, 0, 0);
-    putPixel(199, 125, color);
-    putPixel(201, 125, color);
-    putPixel(200, 124, color);
-    putPixel(200, 126, color);
 }
 
 void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge)
@@ -268,7 +268,7 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
             double z = 1.0 / sliceZ;
             int index = y * viewSize.x + x;
             
-            if (index >= 0 && index < viewSize.x * viewSize.y)
+            if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y)
             {
                 if (z < zBuffer[index]) {
                     double u = z * 20;
@@ -285,6 +285,11 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
                 }
             }
             
+            if (index >= 0 && index < viewSize.x * viewSize.y)
+            {
+                
+            }
+            
             sliceZ += sliceZStep;
         }
         
@@ -295,7 +300,8 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
 
 void Camera::putPixel(int x, int y, sf::Color& color)
 {
-    if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y) {
+    if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y)
+    {
         int index = (x + y * viewSize.x) * 4;
         pixels[index]     = color.r;    // Red
         pixels[index + 1] = color.g;    // Green
