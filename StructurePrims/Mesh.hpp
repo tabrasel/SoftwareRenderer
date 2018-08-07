@@ -11,14 +11,13 @@
 class Mesh
 {
     private:
-    std::vector<Polygon> polygons;
-    std::vector<Vertex> vertices;
+        std::vector<Polygon*> polygons;
+        std::vector<Vertex*> vertices;
     
     public:
-    Mesh();
-    std::vector<Polygon>* getPolygons;
-    std::vector<Vertex>* getVertices;
-    
+        Mesh();
+        std::vector<Polygon*>& getPolygons();
+        std::vector<Vertex*>& getVertices();
 };
 
 #endif

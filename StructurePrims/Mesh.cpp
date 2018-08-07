@@ -14,13 +14,6 @@ Mesh::Mesh()
     
     std::string line;
     std::ifstream objFile(resourcePath() + "cube.obj");
- 
-    /*
-     v 1.000000 -1.000000 -1.000000
-     vt 0.750000 0.750000
-     vn 0.000000 0.000000 -1.000000
-     f 5/1/1 1/2/1 4/3/1
-    */
     
     if (objFile.is_open())
     {
@@ -47,10 +40,9 @@ Mesh::Mesh()
                         float y = std::stof(result[2]);
                         float z = std::stof(result[3]);
                         
-                        std::cout << "Making a vertex (" << x << ", " << y << ", " << z << ")" << std::endl;
                         sf::Vector3f objectPosition = sf::Vector3f(x, y, z);
-                        Vertex vertex = Vertex(objectPosition);
-                        vertices.push_back(vertex);
+                        Vertex* newVertex = new Vertex(objectPosition);
+                        vertices.push_back(newVertex);
                     }
                 } else if (what == "f")
                 {
@@ -59,21 +51,34 @@ Mesh::Mesh()
                         std::vector<int> polygonVertices;
                         for (int i = 1; i < result.size(); i++)
                         {
-                            int vertIndex = std::stoi(result[i].substr(0, result[i].find_first_of("/")));
+                            int vertIndex = std::stoi(result[i].substr(0, result[i].find_first_of("/"))) - 1;
                             polygonVertices.push_back(vertIndex);
                         }
                         
-                        std::cout << "Making a face out of vertices #" << polygonVertices[0] << ", #" << polygonVertices[1] << ", and #" << polygonVertices[2] << std::endl;
-                        
-                        Vertex v1 = vertices[polygonVertices[0] + 1];
-                        Vertex v2 = vertices[polygonVertices[1] + 1];
-                        Vertex v3 = vertices[polygonVertices[2] + 1];
-                        
-                        Polygon polygon = Polygon(v1, v2, v3);
-                        polygons.push_back(polygon);
+                        Vertex* v1 = vertices[polygonVertices[0]];
+                        Vertex* v2 = vertices[polygonVertices[1]];
+                        Vertex* v3 = vertices[polygonVertices[2]];
+                         
+                        Polygon* newPolygon = new Polygon(v1, v2, v3);
+                        polygons.push_back(newPolygon);
                     }
                 }
             }
         }
     }
+    
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        //std::cout << "Vertex #" << i + 1 << " " << &vertices[i] << " at (" << vertices[i].getWorldPosition().x << ", " << vertices[i].getWorldPosition().y << ", " << vertices[i].getWorldPosition().z << ")" << std::endl;
+    }
+}
+
+std::vector<Vertex*>& Mesh::getVertices()
+{
+    return vertices;
+}
+
+std::vector<Polygon*>& Mesh::getPolygons()
+{
+    return polygons;
 }

@@ -7,7 +7,7 @@
 class Vertex
 {
     private:
-        sf::Vector3f objectPosition;
+        //sf::Vector3f objectPosition;
         sf::Vector3f worldPosition;
         sf::Vector3f cameraPosition;
         sf::Vector2f screenPosition;

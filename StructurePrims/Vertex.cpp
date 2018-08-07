@@ -1,8 +1,9 @@
 #include "Vertex.hpp"
+#include <iostream>
 
 Vertex::Vertex()
 {
-    objectPosition  = sf::Vector3f(0.0, 0.0, 0.0);
+    //objectPosition  = sf::Vector3f(0.0, 0.0, 0.0);
     worldPosition   = sf::Vector3f(0.0, 0.0, 0.0);
     cameraPosition  = sf::Vector3f(0.0, 0.0, 0.0);
     screenPosition  = sf::Vector2f(0.0, 0.0);
@@ -11,6 +12,7 @@ Vertex::Vertex()
 Vertex::Vertex(sf::Vector3f& worldPosition)
 {
     this->worldPosition = worldPosition;
+    //std::cout << "Checking: " << worldPosition.x << ", " << worldPosition.y << ", " << worldPosition.z << std::endl;
 }
 
 void Vertex::setCameraPosition(sf::Vector3f& cameraPosition)

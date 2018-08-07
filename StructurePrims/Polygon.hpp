@@ -9,12 +9,12 @@
 class Polygon
 {
     private:
-        std::array<Vertex, 3> vertices;
+        std::array<Vertex*, 3> vertices;
     
     public:
         Polygon();
-        Polygon(Vertex& v1, Vertex& v2, Vertex& v3);
-        std::array<Vertex, 3>& getVertices();
+        Polygon(Vertex* v1, Vertex* v2, Vertex* v3);
+        std::array<Vertex*, 3>& getVertices();
 };
 
 #endif

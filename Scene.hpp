@@ -9,13 +9,10 @@
 class Scene
 {
     private:
-        Polygon polygon;
         Mesh mesh;
-        std::vector<Polygon> polygons;
     
     public:
         Scene();
-        Polygon& getPolygon();
         Mesh& getMesh();
 };
 

@@ -9,13 +9,16 @@ Camera::Camera()
 {
     position = sf::Vector3f(0.0, 1.0, -4.0);
     angle = sf::Vector3f(0.0, 0.0, 0.0);
+    
     forward = sf::Vector3f(0.0, 0.0, 1.0);
     sideways = sf::Vector3f(1.0, 0.0, 0.0);
     upward = sf::Vector3f(0.0, 1.0, 0.0);
+    
     viewSize = sf::Vector2f(400, 255);
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
     nearPlane = 0.1;
+    
     sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     lastMousePos = sf::Vector2i(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
 }
@@ -118,8 +121,8 @@ void Camera::update()
         sf::Vector2i mouseDelta(sf::Mouse::getPosition().x - 1280, sf::Mouse::getPosition().y - 1600 - 800);
         lastMousePos.x = sf::Mouse::getPosition().x;
         lastMousePos.y = sf::Mouse::getPosition().y;
-        //angle += sf::Vector3f(mouseDelta.y * 0.002, mouseDelta.x * 0.002, 0.0);
-        //sf::Mouse::setPosition(sf::Vector2i(1280, 800));
+        angle += sf::Vector3f(mouseDelta.y * 0.002, mouseDelta.x * 0.002, 0.0);
+        sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     }
     
     forward = sf::Vector3f(0.0, 0.0, 1.0);
@@ -144,14 +147,6 @@ void Camera::clearView()
 
 void Camera::viewScene(Scene& scene)
 {
-    
-    Mesh mesh = scene.getMesh();
-    
-    /// GET VERTICES FROM THE MESH NOW HAHA SUCKER
-    
-    
-    std::array<Vertex, 3> vertices = scene.getPolygon().getVertices();
-    
     sf::Vector3f yawAxis = sf::Vector3f(0.0, 1.0, 0.0);
     sf::Vector3f pitchAxis = sf::Vector3f(1.0, 0.0, 0.0);
     sf::Vector3f rollAxis = sf::Vector3f(0.0, 0.0, 1.0);
@@ -161,19 +156,16 @@ void Camera::viewScene(Scene& scene)
     Quaternion rollRot = Quaternion(rollAxis, -angle.z);
     
     // Draw grid
-    for (double z = -10; z <= 10; z += 0.5)
+    for (double z = -10; z <= 10; z += 1)
     {
-        for (double x = -10; x <= 10; x += 0.5)
+        for (double x = -10; x <= 10; x += 1)
         {
             sf::Vector3f camPos = sf::Vector3f(x - position.x, 0 - position.y, z - position.z);
-            
             yawRot.rotateVector(camPos);
             pitchRot.rotateVector(camPos);
             rollRot.rotateVector(camPos);
-            
             sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
                                                        viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
-            
             if (camPos.z > 0) {
                 sf::Color color(0, 0, 0);
                 putPixel((int)screenPosition.x, (int)screenPosition.y, color);
@@ -181,74 +173,89 @@ void Camera::viewScene(Scene& scene)
         }
     }
     
+    
+    // Draw meshes
+    Mesh mesh = scene.getMesh();
+    std::vector<Vertex*> vertices = mesh.getVertices();
+    std::vector<Polygon*> polygons = mesh.getPolygons();
+    
     // Transform vertices to camera and screen coordinates
     for (int i = 0; i < vertices.size(); i++)
     {
-         sf::Vector3f camPos = vertices[i].getWorldPosition() - position;
-     
-         yawRot.rotateVector(camPos);
-         pitchRot.rotateVector(camPos);
-         rollRot.rotateVector(camPos);
+        Vertex* vertex = vertices[i];
         
-        vertices[i].setCameraPosition(camPos);
+        sf::Vector3f camPos = vertex->getWorldPosition() - position;
+        
+        yawRot.rotateVector(camPos);
+        pitchRot.rotateVector(camPos);
+        rollRot.rotateVector(camPos);
+        
+        vertex->setCameraPosition(camPos);
         sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
                                                    viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
-        vertices[i].setScreenPosition(screenPosition);
+        vertex->setScreenPosition(screenPosition);
     }
     
+    /*
     if (vertices[0].getCameraPosition().z <= nearPlane || vertices[1].getCameraPosition().z <= nearPlane || vertices[2].getCameraPosition().z <= nearPlane)
     {
         return;
     }
+     */
     
-    Vertex* top = &vertices[0];
-    Vertex* mid = &vertices[1];
-    Vertex* bot = &vertices[2];
     
-    if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
-        Vertex* temp = mid;
-        mid = bot;
-        bot = temp;
-    }
-    if (mid->getScreenPosition().y < top->getScreenPosition().y) {
-        Vertex* temp = top;
-        top = mid;
-        mid = temp;
-    }
-    if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
-        Vertex* temp = mid;
-        mid = bot;
-        bot = temp;
-    }
-    
-    // Create edges
-    Edge topToMid = Edge(*top, *mid);
-    Edge midToBot = Edge(*mid, *bot);
-    Edge topToBot = Edge(*top, *bot);
-    
-    // Is the long side on the left?
-    bool isLeftHanded = polygonLeftHanded(*top, *mid, *bot);
-    
-    Edge* leftEdge = &topToMid;
-    Edge* rightEdge = &topToBot;
-    if (!isLeftHanded)
+    for (int i = 0; i < polygons.size(); i++)
     {
-        leftEdge = &topToBot;
-        rightEdge = &topToMid;
+        Polygon* polygon = polygons[i];
+        
+        Vertex* top  = polygon->getVertices()[0];
+        Vertex* mid  = polygon->getVertices()[1];
+        Vertex* bot  = polygon->getVertices()[2];
+
+        if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
+            Vertex* temp = mid;
+            mid = bot;
+            bot = temp;
+        }
+        if (mid->getScreenPosition().y < top->getScreenPosition().y) {
+            Vertex* temp = top;
+            top = mid;
+            mid = temp;
+        }
+        if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
+            Vertex* temp = mid;
+            mid = bot;
+            bot = temp;
+        }
+        
+        // Create edges
+        Edge topToMid = Edge(*top, *mid);
+        Edge midToBot = Edge(*mid, *bot);
+        Edge topToBot = Edge(*top, *bot);
+        
+        // Is the long side on the left?
+        bool isLeftHanded = polygonLeftHanded(*top, *mid, *bot);
+        
+        Edge* leftEdge = &topToMid;
+        Edge* rightEdge = &topToBot;
+        if (!isLeftHanded)
+        {
+            leftEdge = &topToBot;
+            rightEdge = &topToMid;
+        }
+        
+        drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
+        
+        leftEdge = &midToBot;
+        rightEdge = &topToBot;
+        if (!isLeftHanded)
+        {
+            leftEdge = &topToBot;
+            rightEdge = &midToBot;
+        }
+        
+        drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
     }
-    
-    sf::Color fillColor(0, 0, 255);
-    drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
-    
-    leftEdge = &midToBot;
-    rightEdge = &topToBot;
-    if (!isLeftHanded)
-    {
-        leftEdge = &topToBot;
-        rightEdge = &midToBot;
-    }
-    
-    drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
 }
 
 void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge)
