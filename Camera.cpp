@@ -87,7 +87,10 @@ void Camera::update()
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
     {
-        position += sf::Vector3f(0.0, -0.05, 0.0);
+        //position += sf::Vector3f(0.0, -0.05, 0.0);
+        position.x += upward.x * -0.05;
+        position.y += upward.y * -0.05;
+        position.z += upward.z * -0.05;
     }
     
     // Angle
@@ -156,9 +159,9 @@ void Camera::viewScene(Scene& scene)
     Quaternion rollRot = Quaternion(rollAxis, -angle.z);
     
     // Draw grid
-    for (double z = -10; z <= 10; z += 1)
+    for (double z = -5; z <= 5; z += 1)
     {
-        for (double x = -10; x <= 10; x += 1)
+        for (double x = -5; x <= 5; x += 1)
         {
             sf::Vector3f camPos = sf::Vector3f(x - position.x, 0 - position.y, z - position.z);
             yawRot.rotateVector(camPos);
@@ -196,14 +199,6 @@ void Camera::viewScene(Scene& scene)
         vertex->setScreenPosition(screenPosition);
     }
     
-    /*
-    if (vertices[0].getCameraPosition().z <= nearPlane || vertices[1].getCameraPosition().z <= nearPlane || vertices[2].getCameraPosition().z <= nearPlane)
-    {
-        return;
-    }
-     */
-    
-    
     for (int i = 0; i < polygons.size(); i++)
     {
         Polygon* polygon = polygons[i];
@@ -211,7 +206,13 @@ void Camera::viewScene(Scene& scene)
         Vertex* top  = polygon->getVertices()[0];
         Vertex* mid  = polygon->getVertices()[1];
         Vertex* bot  = polygon->getVertices()[2];
-
+        
+        
+        if (top->getCameraPosition().z > nearPlane || mid->getCameraPosition().z > nearPlane || bot->getCameraPosition().z > nearPlane)
+        {
+            return;
+        }
+        
         if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
             Vertex* temp = mid;
             mid = bot;
@@ -236,6 +237,7 @@ void Camera::viewScene(Scene& scene)
         // Is the long side on the left?
         bool isLeftHanded = polygonLeftHanded(*top, *mid, *bot);
         
+        // Determine left and right edges of top triangle
         Edge* leftEdge = &topToMid;
         Edge* rightEdge = &topToBot;
         if (!isLeftHanded)
@@ -244,8 +246,10 @@ void Camera::viewScene(Scene& scene)
             rightEdge = &topToMid;
         }
         
+        // Draw top triangle
         drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
         
+        // Determine left and right edges of bottom triangle
         leftEdge = &midToBot;
         rightEdge = &topToBot;
         if (!isLeftHanded)
@@ -254,6 +258,7 @@ void Camera::viewScene(Scene& scene)
             rightEdge = &midToBot;
         }
         
+        // Draw bottom triangle
         drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
     }
 }
@@ -262,15 +267,14 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
 {
     for (int y = topY; y < bottomY; y++)
     {
-        // Scanline left and right boundries
-        int startX = std::ceil(leftEdge->getX() - 0.5);
-        int endX = std::ceil(rightEdge->getX() - 1.5);
+        int startX = std::floor(leftEdge->getX() + 0.5);
+        int endX = std::floor(rightEdge->getX() - 0.5);
         
         // Scanline Z interpolants
         double sliceZStep = (rightEdge->getZ() - leftEdge->getZ()) / (rightEdge->getX() - leftEdge->getX());
         double sliceZ = leftEdge->getZ() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceZStep;
         
-        for (int x = startX; x < endX; x++)
+        for (int x = startX; x <= endX; x++)
         {
             double z = 1.0 / sliceZ;
             int index = y * viewSize.x + x;
@@ -278,7 +282,7 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
             if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y)
             {
                 if (z < zBuffer[index]) {
-                    double u = z * 20;
+                    double u = z * 30;
                     if (u < 0) {
                         u = 0;
                     }
@@ -290,11 +294,6 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
                     putPixel(x, y, fillColor);
                     zBuffer[index] = z;
                 }
-            }
-            
-            if (index >= 0 && index < viewSize.x * viewSize.y)
-            {
-                
             }
             
             sliceZ += sliceZStep;
