@@ -18,6 +18,8 @@ class Camera
         double* zBuffer;
         sf::Texture view;
         sf::Vector2f viewSize;
+        sf::Vector2f fov;
+        sf::Vector2f focalLength;
         double nearPlane;
         sf::Vector2i lastMousePos;
     

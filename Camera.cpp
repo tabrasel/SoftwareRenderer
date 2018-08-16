@@ -14,7 +14,10 @@ Camera::Camera()
     sideways = sf::Vector3f(1.0, 0.0, 0.0);
     upward = sf::Vector3f(0.0, 1.0, 0.0);
     
+    fov = sf::Vector2f(1.57, 1.2);
     viewSize = sf::Vector2f(400, 255);
+    focalLength = sf::Vector2f((viewSize.x / 2) / tan(fov.x / 2), (viewSize.y / 2) / tan(fov.y / 2));
+    
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
     nearPlane = 0.1;
@@ -194,8 +197,12 @@ void Camera::viewScene(Scene& scene)
         rollRot.rotateVector(camPos);
         
         vertex->setCameraPosition(camPos);
-        sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
-                                                   viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
+        //sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
+         //                                          viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
+        
+        sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + ((camPos.x * focalLength.x) / camPos.z),
+                                                   viewSize.y / 2 - ((camPos.y * focalLength.y) / camPos.z));
+
         vertex->setScreenPosition(screenPosition);
     }
     
@@ -210,7 +217,7 @@ void Camera::viewScene(Scene& scene)
         
         if (top->getCameraPosition().z > nearPlane || mid->getCameraPosition().z > nearPlane || bot->getCameraPosition().z > nearPlane)
         {
-            return;
+            //return;
         }
         
         if (bot->getScreenPosition().y < mid->getScreenPosition().y) {

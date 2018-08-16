@@ -13,7 +13,7 @@ Mesh::Mesh()
     std::string fileName = "cube.obj";
     
     std::string line;
-    std::ifstream objFile(resourcePath() + "cube.obj");
+    std::ifstream objFile(resourcePath() + "teapot.obj");
     
     if (objFile.is_open())
     {
