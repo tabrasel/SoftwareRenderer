@@ -20,7 +20,7 @@ Camera::Camera()
     
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
-    nearPlane = 0.1;
+    nearPlane = 0.5;
     
     sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     lastMousePos = sf::Vector2i(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
@@ -170,8 +170,9 @@ void Camera::viewScene(Scene& scene)
             yawRot.rotateVector(camPos);
             pitchRot.rotateVector(camPos);
             rollRot.rotateVector(camPos);
-            sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
-                                                       viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
+            
+            sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + ((camPos.x * focalLength.x) / camPos.z),
+                                                       viewSize.y / 2 - ((camPos.y * focalLength.y) / camPos.z));
             if (camPos.z > 0) {
                 sf::Color color(0, 0, 0);
                 putPixel((int)screenPosition.x, (int)screenPosition.y, color);
@@ -197,14 +198,14 @@ void Camera::viewScene(Scene& scene)
         rollRot.rotateVector(camPos);
         
         vertex->setCameraPosition(camPos);
-        //sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + (camPos.x / camPos.z) * viewSize.x / 2,
-         //                                          viewSize.y / 2 - (camPos.y / camPos.z) * viewSize.y / 2);
-        
+
         sf::Vector2f screenPosition = sf::Vector2f(viewSize.x / 2 + ((camPos.x * focalLength.x) / camPos.z),
                                                    viewSize.y / 2 - ((camPos.y * focalLength.y) / camPos.z));
 
         vertex->setScreenPosition(screenPosition);
     }
+    
+    int drawnPolys = 0;
     
     for (int i = 0; i < polygons.size(); i++)
     {
@@ -214,60 +215,80 @@ void Camera::viewScene(Scene& scene)
         Vertex* mid  = polygon->getVertices()[1];
         Vertex* bot  = polygon->getVertices()[2];
         
-        
-        if (top->getCameraPosition().z > nearPlane || mid->getCameraPosition().z > nearPlane || bot->getCameraPosition().z > nearPlane)
+        if (top->getCameraPosition().z > nearPlane && mid->getCameraPosition().z > nearPlane && bot->getCameraPosition().z > nearPlane)
         {
-            //return;
+            sf::Vector3f edge1 = sf::Vector3f(mid->getWorldPosition().x - top->getWorldPosition().x,
+                                              mid->getWorldPosition().y - top->getWorldPosition().y,
+                                              mid->getWorldPosition().z - top->getWorldPosition().z);
+            sf::Vector3f edge2 = sf::Vector3f(bot->getWorldPosition().x - top->getWorldPosition().x,
+                                              bot->getWorldPosition().y - top->getWorldPosition().y,
+                                              bot->getWorldPosition().z - top->getWorldPosition().z);
+            
+            float normalX = edge1.y * edge2.z - edge1.z * edge2.y;
+            float normalY = edge1.z * edge2.x - edge1.x * edge2.z;
+            float normalZ = edge1.x * edge2.y - edge1.y * edge2.x;
+            sf::Vector3f normal = sf::Vector3f(normalX, normalY, normalZ);
+            
+            sf::Vector3f cameraToPolygon = sf::Vector3f(top->getWorldPosition() - position);
+            
+            float angleDiff = normal.x * cameraToPolygon.x + normal.y * cameraToPolygon.y + normal.z * cameraToPolygon.z;
+            
+            if (angleDiff <= 0)
+            {
+                drawnPolys++;
+                
+                if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
+                    Vertex* temp = mid;
+                    mid = bot;
+                    bot = temp;
+                }
+                if (mid->getScreenPosition().y < top->getScreenPosition().y) {
+                    Vertex* temp = top;
+                    top = mid;
+                    mid = temp;
+                }
+                if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
+                    Vertex* temp = mid;
+                    mid = bot;
+                    bot = temp;
+                }
+                
+                // Create edges
+                Edge topToMid = Edge(*top, *mid);
+                Edge midToBot = Edge(*mid, *bot);
+                Edge topToBot = Edge(*top, *bot);
+                
+                // Is the long side on the left?
+                bool isLeftHanded = polygonLeftHanded(*top, *mid, *bot);
+                
+                // Determine left and right edges of top triangle
+                Edge* leftEdge = &topToMid;
+                Edge* rightEdge = &topToBot;
+                if (!isLeftHanded)
+                {
+                    leftEdge = &topToBot;
+                    rightEdge = &topToMid;
+                }
+                
+                // Draw top triangle
+                drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
+                
+                // Determine left and right edges of bottom triangle
+                leftEdge = &midToBot;
+                rightEdge = &topToBot;
+                if (!isLeftHanded)
+                {
+                    leftEdge = &topToBot;
+                    rightEdge = &midToBot;
+                }
+                
+                // Draw bottom triangle
+                drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
+            }
         }
         
-        if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
-            Vertex* temp = mid;
-            mid = bot;
-            bot = temp;
-        }
-        if (mid->getScreenPosition().y < top->getScreenPosition().y) {
-            Vertex* temp = top;
-            top = mid;
-            mid = temp;
-        }
-        if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
-            Vertex* temp = mid;
-            mid = bot;
-            bot = temp;
-        }
-        
-        // Create edges
-        Edge topToMid = Edge(*top, *mid);
-        Edge midToBot = Edge(*mid, *bot);
-        Edge topToBot = Edge(*top, *bot);
-        
-        // Is the long side on the left?
-        bool isLeftHanded = polygonLeftHanded(*top, *mid, *bot);
-        
-        // Determine left and right edges of top triangle
-        Edge* leftEdge = &topToMid;
-        Edge* rightEdge = &topToBot;
-        if (!isLeftHanded)
-        {
-            leftEdge = &topToBot;
-            rightEdge = &topToMid;
-        }
-        
-        // Draw top triangle
-        drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
-        
-        // Determine left and right edges of bottom triangle
-        leftEdge = &midToBot;
-        rightEdge = &topToBot;
-        if (!isLeftHanded)
-        {
-            leftEdge = &topToBot;
-            rightEdge = &midToBot;
-        }
-        
-        // Draw bottom triangle
-        drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
     }
+    //std::cout << drawnPolys << std::endl;
 }
 
 void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge)
@@ -289,7 +310,7 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
             if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y)
             {
                 if (z < zBuffer[index]) {
-                    double u = z * 30;
+                    double u = z * 50;
                     if (u < 0) {
                         u = 0;
                     }
