@@ -17,9 +17,10 @@ int main(int, char const**)
         return EXIT_FAILURE;
     }
     
-    sf::Text text("", font, 14);
+    sf::Text text("", font, 52);
     text.setFillColor(sf::Color::Black);
     text.setPosition(0, 0);
+    text.scale(0.25, 0.25);
     
     const int CANVAS_WIDTH = 400;
     const int CANVAS_HEIGHT = 250;
@@ -31,10 +32,6 @@ int main(int, char const**)
     sf::Texture screen;
     screen.create(CANVAS_WIDTH, CANVAS_HEIGHT);
     sf::Sprite sprite(screen);
-
-//    camera.update();
-//    camera.clearView();
-//    camera.viewScene(scene);
     
     while (window.isOpen())
     {

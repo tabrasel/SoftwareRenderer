@@ -1,6 +1,7 @@
 #include "Camera.hpp"
 #include "Quaternion.hpp"
 #include "Mesh.hpp"
+#include "ResourcePath.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -24,6 +25,8 @@ Camera::Camera()
     
     sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     lastMousePos = sf::Vector2i(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
+    
+    texture.loadFromFile(resourcePath() + "texture.jpg");
 }
 
 Camera::~Camera()
@@ -211,9 +214,14 @@ void Camera::viewScene(Scene& scene)
     {
         Polygon* polygon = polygons[i];
         
-        Vertex* top  = polygon->getVertices()[0];
-        Vertex* mid  = polygon->getVertices()[1];
-        Vertex* bot  = polygon->getVertices()[2];
+        Vertex* top = polygon->getVertices()[0];
+        Vertex* mid = polygon->getVertices()[1];
+        Vertex* bot = polygon->getVertices()[2];
+        
+        // Set triangle texture coordinates to corresponsiding vertices
+        top->setTextureCoords(*(polygon->getTextureCoords()[0]));
+        mid->setTextureCoords(*(polygon->getTextureCoords()[1]));
+        bot->setTextureCoords(*(polygon->getTextureCoords()[2]));
         
         if (top->getCameraPosition().z > nearPlane && mid->getCameraPosition().z > nearPlane && bot->getCameraPosition().z > nearPlane)
         {
@@ -233,7 +241,7 @@ void Camera::viewScene(Scene& scene)
             
             float angleDiff = normal.x * cameraToPolygon.x + normal.y * cameraToPolygon.y + normal.z * cameraToPolygon.z;
             
-            if (angleDiff <= 0)
+            if (angleDiff < 0)
             {
                 drawnPolys++;
                 
@@ -288,7 +296,6 @@ void Camera::viewScene(Scene& scene)
         }
         
     }
-    //std::cout << drawnPolys << std::endl;
 }
 
 void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge)
@@ -302,29 +309,41 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
         double sliceZStep = (rightEdge->getZ() - leftEdge->getZ()) / (rightEdge->getX() - leftEdge->getX());
         double sliceZ = leftEdge->getZ() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceZStep;
         
+        double sliceUStep = (rightEdge->getU() - leftEdge->getU()) / (rightEdge->getX() - leftEdge->getX());
+        double sliceU = leftEdge->getU() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceUStep;
+        
+        double sliceVStep = (rightEdge->getV() - leftEdge->getV()) / (rightEdge->getX() - leftEdge->getX());
+        double sliceV = leftEdge->getV() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceVStep;
+        
         for (int x = startX; x <= endX; x++)
         {
             double z = 1.0 / sliceZ;
+            double u = sliceU / sliceZ;
+            double v = sliceV / sliceZ;
+
             int index = y * viewSize.x + x;
             
             if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y)
             {
                 if (z < zBuffer[index]) {
-                    double u = z * 50;
-                    if (u < 0) {
-                        u = 0;
+                    double k = z * 50;
+                    if (k < 0) {
+                        k = 0;
                     }
-                    if (u > 255) {
-                        u = 255;
+                    if (k > 255) {
+                        k = 255;
                     }
                     
-                    sf::Color fillColor(u, 0, 255);
-                    putPixel(x, y, fillColor);
+                    sf::Color texColor(texture.getPixel(std::floor(u * texture.getSize().x), std::floor(v * texture.getSize().y)));
+                    //sf::Color fillColor(k, 0, 255);
+                    putPixel(x, y, texColor);
                     zBuffer[index] = z;
                 }
             }
             
             sliceZ += sliceZStep;
+            sliceU += sliceUStep;
+            sliceV += sliceVStep;
         }
         
         leftEdge->step();

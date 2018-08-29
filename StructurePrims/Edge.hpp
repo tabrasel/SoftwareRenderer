@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include "Vertex.hpp"
+#include <SFML/Graphics.hpp>
 
 class Edge
 {
@@ -11,6 +12,8 @@ class Edge
         double startY, endY;
         double x, xStep;
         double z, zStep;
+    double u, uStep;
+    double v, vStep;
     
     public:
         Edge(Vertex& start, Vertex& end);
@@ -19,6 +22,8 @@ class Edge
         double getEndY();
         double getX();
         double getZ();
+    double getU();
+    double getV();
 };
 
 #endif

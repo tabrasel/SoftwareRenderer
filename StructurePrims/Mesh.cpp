@@ -13,64 +13,89 @@ Mesh::Mesh()
     std::string fileName = "cube.obj";
     
     std::string line;
-    std::ifstream objFile(resourcePath() + "teapot.obj");
+    std::ifstream objFile(resourcePath() + fileName);
     
     if (objFile.is_open())
     {
         int row = 0;
         while (getline(objFile, line))
         {
-            std::vector<std::string> result ;
+            std::vector<std::string> lineParts ;
             std::istringstream stm(line);
             std::string tok;
             
             while(stm >> tok)
             {
-                result.push_back(tok);
+                lineParts.push_back(tok);
             }
             
-            if (result.size() > 0)
+            if (lineParts.size() > 0)
             {
-                std::string what = result[0];
+                std::string elementType = lineParts[0];
                 
-                if (what == "v") {
-                    if (result.size() == 4)
+                if (elementType == "v") {
+                    if (lineParts.size() == 4)
                     {
-                        float x = std::stof(result[1]);
-                        float y = std::stof(result[2]);
-                        float z = std::stof(result[3]);
+                        float x = std::stof(lineParts[1]);
+                        float y = std::stof(lineParts[2]);
+                        float z = std::stof(lineParts[3]);
                         
                         sf::Vector3f objectPosition = sf::Vector3f(x, y, z);
                         Vertex* newVertex = new Vertex(objectPosition);
                         vertices.push_back(newVertex);
                     }
-                } else if (what == "f")
+                } else if (elementType == "vt")
                 {
-                    if (result.size() == 4)
+                    if (lineParts.size() == 3)
+                    {
+                        float x = std::stof(lineParts[1]);
+                        float y = std::stof(lineParts[2]);
+                        sf::Vector2f* newTextureCoords = new sf::Vector2f(x, y);
+                        textureCoords.push_back(newTextureCoords);
+                    }
+                } else if (elementType == "f")
+                {
+                    if (lineParts.size() == 4)
                     {
                         std::vector<int> polygonVertices;
-                        for (int i = 1; i < result.size(); i++)
+                        
+                        std::array<Vertex*, 3> polyVertices;
+                        std::array<sf::Vector2f*, 3> polyTextureCoords;
+                        
+                        for (int i = 1; i < lineParts.size(); i++)
                         {
-                            int vertIndex = std::stoi(result[i].substr(0, result[i].find_first_of("/"))) - 1;
-                            polygonVertices.push_back(vertIndex);
+                            std::string vertexAttr = lineParts[i];
+                            
+                            int slashIndex1 = vertexAttr.find_first_of("/");
+                            int slashIndex2 = vertexAttr.substr(0, slashIndex1 + 1).find_first_of("/");
+
+                            int vertexPositionIndex = std::stoi(lineParts[i].substr(0, slashIndex1)) - 1;
+                            int textureCoordsIndex = std::stoi(lineParts[i].substr(slashIndex1 + 1, slashIndex2)) - 1;
+                            
+                            polygonVertices.push_back(vertexPositionIndex);
+                            
+                            polyVertices[i - 1] = vertices[vertexPositionIndex];
+                            polyTextureCoords[i - 1] = textureCoords[textureCoordsIndex];
                         }
                         
                         Vertex* v1 = vertices[polygonVertices[0]];
                         Vertex* v2 = vertices[polygonVertices[1]];
                         Vertex* v3 = vertices[polygonVertices[2]];
-                         
-                        Polygon* newPolygon = new Polygon(v1, v2, v3);
-                        polygons.push_back(newPolygon);
+                        
+                        Polygon* newPoly = new Polygon(polyVertices, polyTextureCoords);
+                        
+                        polygons.push_back(newPoly);
                     }
                 }
             }
         }
     }
     
-    for (int i = 0; i < vertices.size(); i++)
+    for (int i = 0; i < textureCoords.size(); i++)
     {
-        //std::cout << "Vertex #" << i + 1 << " " << &vertices[i] << " at (" << vertices[i].getWorldPosition().x << ", " << vertices[i].getWorldPosition().y << ", " << vertices[i].getWorldPosition().z << ")" << std::endl;
+        std::cout << textureCoords[i]->x << ", " << textureCoords[i]->y << std::endl;
     }
+    
 }
 
 std::vector<Vertex*>& Mesh::getVertices()

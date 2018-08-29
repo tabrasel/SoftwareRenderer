@@ -11,19 +11,20 @@ class Vertex
         sf::Vector3f worldPosition;
         sf::Vector3f cameraPosition;
         sf::Vector2f screenPosition;
+        sf::Vector2f textureCoords;
     
     public:
         Vertex();
         Vertex(sf::Vector3f& worldPosition);
     
-        // Setters
         void setCameraPosition(sf::Vector3f& cameraPosition);
         void setScreenPosition(sf::Vector2f& screenPosition);
+        void setTextureCoords(sf::Vector2f& textureCoords);
     
-        // Getters
         sf::Vector3f& getWorldPosition();
         sf::Vector3f& getCameraPosition();
         sf::Vector2f& getScreenPosition();
+        sf::Vector2f& getTextureCoords();
 };
 
 #endif

@@ -6,13 +6,12 @@
 #include "Polygon.hpp"
 #include <vector>
 
-// At some point include edges?
-
 class Mesh
 {
     private:
         std::vector<Polygon*> polygons;
         std::vector<Vertex*> vertices;
+        std::vector<sf::Vector2f*> textureCoords;
     
     public:
         Mesh();

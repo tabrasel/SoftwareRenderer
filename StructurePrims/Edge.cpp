@@ -11,18 +11,29 @@ Edge::Edge(Vertex& start, Vertex& end)
     
     startY = std::ceil(start.getScreenPosition().y - 0.5) + 0.5;
     endY = std::ceil(end.getScreenPosition().y - 0.5) + 0.5;
+    double offset = (startY - start.getScreenPosition().y);
     
     xStep = (end.getScreenPosition().x - start.getScreenPosition().x) / yDelta;
-    x = start.getScreenPosition().x + xStep * (startY - start.getScreenPosition().y);
+    x = start.getScreenPosition().x + xStep * offset;
     
     zStep = ((1.0 / end.getCameraPosition().z) - (1.0 / start.getCameraPosition().z)) / yDelta;
-    z = (1.0 / start.getCameraPosition().z) + zStep * (startY - start.getScreenPosition().y);
+    z = (1.0 / start.getCameraPosition().z) + zStep * offset;
+    
+    uStep = ((end.getTextureCoords().x / end.getCameraPosition().z) - (start.getTextureCoords().x / start.getCameraPosition().z)) / yDelta;
+    u = (start.getTextureCoords().x / start.getCameraPosition().z) + uStep * offset;
+    
+    vStep = ((end.getTextureCoords().y / end.getCameraPosition().z) - (start.getTextureCoords().y / start.getCameraPosition().z)) / yDelta;
+    v = (start.getTextureCoords().y / start.getCameraPosition().z) + vStep * offset;
+    
+    
 }
 
 void Edge::step()
 {
     x += xStep;
     z += zStep;
+    u += uStep;
+    v += vStep;
 }
 
 double Edge::getStartY()
@@ -43,4 +54,14 @@ double Edge::getX()
 double Edge::getZ()
 {
     return z;
+}
+
+double Edge::getU()
+{
+    return u;
+}
+
+double Edge::getV()
+{
+    return v;
 }

@@ -22,6 +22,7 @@ class Camera
         sf::Vector2f focalLength;
         double nearPlane;
         sf::Vector2i lastMousePos;
+        sf::Image texture;
     
     public:
         Camera();
