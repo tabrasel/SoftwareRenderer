@@ -212,6 +212,7 @@ void Camera::viewScene(Scene& scene)
     
     for (int i = 0; i < polygons.size(); i++)
     {
+        
         Polygon* polygon = polygons[i];
         
         Vertex* top = polygon->getVertices()[0];
@@ -222,6 +223,8 @@ void Camera::viewScene(Scene& scene)
         top->setTextureCoords(*(polygon->getTextureCoords()[0]));
         mid->setTextureCoords(*(polygon->getTextureCoords()[1]));
         bot->setTextureCoords(*(polygon->getTextureCoords()[2]));
+        
+        //std::cout << "Poly UV: (" << top->getTextureCoords().x << ", " << top->getTextureCoords().y << ") (" << mid->getTextureCoords().x << ", " << mid->getTextureCoords().y << ") (" << bot->getTextureCoords().x << ", " << bot->getTextureCoords().y << ")" << std::endl;
         
         if (top->getCameraPosition().z > nearPlane && mid->getCameraPosition().z > nearPlane && bot->getCameraPosition().z > nearPlane)
         {
@@ -315,6 +318,10 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
         double sliceVStep = (rightEdge->getV() - leftEdge->getV()) / (rightEdge->getX() - leftEdge->getX());
         double sliceV = leftEdge->getV() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceVStep;
         
+        //std::cout << "\tRow: " << y - topY << " UStep: " << sliceUStep << std::endl;
+        //std::cout << "\t\tStart U: " << sliceU << std::endl;
+        
+        
         for (int x = startX; x <= endX; x++)
         {
             double z = 1.0 / sliceZ;
@@ -345,6 +352,8 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
             sliceU += sliceUStep;
             sliceV += sliceVStep;
         }
+        
+        //std::cout << "\t\tEnd U: " << sliceU << std::endl;
         
         leftEdge->step();
         rightEdge->step();

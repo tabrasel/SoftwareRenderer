@@ -48,9 +48,10 @@ Mesh::Mesh()
                 {
                     if (lineParts.size() == 3)
                     {
-                        float x = std::stof(lineParts[1]);
-                        float y = std::stof(lineParts[2]);
-                        sf::Vector2f* newTextureCoords = new sf::Vector2f(x, y);
+                        float u = std::stof(lineParts[1]);
+                        float v = std::stof(lineParts[2]);
+                        std::cout << "vt: " << u << ", " << v << std::endl;
+                        sf::Vector2f* newTextureCoords = new sf::Vector2f(u, v);
                         textureCoords.push_back(newTextureCoords);
                     }
                 } else if (elementType == "f")
@@ -65,9 +66,12 @@ Mesh::Mesh()
                         for (int i = 1; i < lineParts.size(); i++)
                         {
                             std::string vertexAttr = lineParts[i];
+                            std::cout << vertexAttr << std::endl;
                             
                             int slashIndex1 = vertexAttr.find_first_of("/");
-                            int slashIndex2 = vertexAttr.substr(0, slashIndex1 + 1).find_first_of("/");
+                            int slashIndex2 = vertexAttr.substr(slashIndex1 + 1, vertexAttr.length()).find_first_of("/");
+                            
+                            std::cout << "'" << lineParts[i].substr(slashIndex1 + 1, slashIndex2) << "'" << std::endl;
 
                             int vertexPositionIndex = std::stoi(lineParts[i].substr(0, slashIndex1)) - 1;
                             int textureCoordsIndex = std::stoi(lineParts[i].substr(slashIndex1 + 1, slashIndex2)) - 1;
@@ -76,6 +80,9 @@ Mesh::Mesh()
                             
                             polyVertices[i - 1] = vertices[vertexPositionIndex];
                             polyTextureCoords[i - 1] = textureCoords[textureCoordsIndex];
+                            
+                            //`std::cout << textureCoords[textureCoordsIndex]->x << ", " << textureCoords[textureCoordsIndex]->y << std::endl;
+                            std::cout << "TextureCoordsFileIndex: " << std::stoi(lineParts[i].substr(slashIndex1 + 1, slashIndex2)) << ", TextureCoordsArrayIndex: " << textureCoordsIndex << std::endl;
                         }
                         
                         Vertex* v1 = vertices[polygonVertices[0]];
@@ -93,7 +100,12 @@ Mesh::Mesh()
     
     for (int i = 0; i < textureCoords.size(); i++)
     {
-        std::cout << textureCoords[i]->x << ", " << textureCoords[i]->y << std::endl;
+        //std::cout << "#" << i + 1 << ": " << textureCoords[i]->x << ", " << textureCoords[i]->y << std::endl;
+    }
+    
+    for (int i = 0; i < polygons.size(); i++)
+    {
+        std::cout << "Poly:\n(" << polygons[i]->getTextureCoords()[0]->x << ", " << polygons[i]->getTextureCoords()[0]->y << ")\n(" << polygons[i]->getTextureCoords()[1]->x << ", " << polygons[i]->getTextureCoords()[1]->y << ")\n(" << polygons[i]->getTextureCoords()[2]->x << ", " << polygons[i]->getTextureCoords()[2]->y << ")" << std::endl;
     }
     
 }
