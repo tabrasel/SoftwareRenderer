@@ -10,7 +10,7 @@
 
 Mesh::Mesh()
 {
-    std::string fileName = "cube.obj";
+    std::string fileName = "female.obj";
     
     std::string line;
     std::ifstream objFile(resourcePath() + fileName);
@@ -50,64 +50,57 @@ Mesh::Mesh()
                     {
                         float u = std::stof(lineParts[1]);
                         float v = std::stof(lineParts[2]);
-                        std::cout << "vt: " << u << ", " << v << std::endl;
                         sf::Vector2f* newTextureCoords = new sf::Vector2f(u, v);
                         textureCoords.push_back(newTextureCoords);
                     }
                 } else if (elementType == "f")
                 {
-                    if (lineParts.size() == 4)
+                    std::cout << line << std::endl;
+                    
+                    std::vector<Vertex*> polyVertices;
+                    std::vector<sf::Vector2f*> polyTextureCoords;
+                    
+                    for (int i = 1; i < lineParts.size(); i++)
                     {
-                        std::vector<int> polygonVertices;
-                        
-                        std::array<Vertex*, 3> polyVertices;
-                        std::array<sf::Vector2f*, 3> polyTextureCoords;
-                        
-                        for (int i = 1; i < lineParts.size(); i++)
+                        std::string vertexAttr = lineParts[i];
+                     
+                        int slashIndex1 = vertexAttr.find_first_of("/");
+                        int slashIndex2 = vertexAttr.substr(slashIndex1 + 1, vertexAttr.length()).find_first_of("/");
+                     
+                        if (slashIndex1 > -1)
                         {
-                            std::string vertexAttr = lineParts[i];
-                            std::cout << vertexAttr << std::endl;
-                            
-                            int slashIndex1 = vertexAttr.find_first_of("/");
-                            int slashIndex2 = vertexAttr.substr(slashIndex1 + 1, vertexAttr.length()).find_first_of("/");
-                            
-                            std::cout << "'" << lineParts[i].substr(slashIndex1 + 1, slashIndex2) << "'" << std::endl;
-
+                            // When there is more than one vertex attribute index
                             int vertexPositionIndex = std::stoi(lineParts[i].substr(0, slashIndex1)) - 1;
-                            int textureCoordsIndex = std::stoi(lineParts[i].substr(slashIndex1 + 1, slashIndex2)) - 1;
-                            
-                            polygonVertices.push_back(vertexPositionIndex);
-                            
-                            polyVertices[i - 1] = vertices[vertexPositionIndex];
-                            polyTextureCoords[i - 1] = textureCoords[textureCoordsIndex];
-                            
-                            //`std::cout << textureCoords[textureCoordsIndex]->x << ", " << textureCoords[textureCoordsIndex]->y << std::endl;
-                            std::cout << "TextureCoordsFileIndex: " << std::stoi(lineParts[i].substr(slashIndex1 + 1, slashIndex2)) << ", TextureCoordsArrayIndex: " << textureCoordsIndex << std::endl;
+                            polyVertices.push_back(vertices[vertexPositionIndex]);
+                     
+                            if (slashIndex2 > -1)
+                            {
+                                // When there are more than two vertex attribute indices (vertex pos, UV coords, and normal)
+                                int textureCoordsIndex = std::stoi(vertexAttr.substr(slashIndex1 + 1, slashIndex2)) - 1;
+                                polyTextureCoords.push_back(textureCoords[textureCoordsIndex]);
+                            } else {
+                                // When there are only two element indices (vertex pos and UV coords)
+                                int textureCoordsIndex = std::stoi(vertexAttr.substr(slashIndex1 + 1, vertexAttr.length())) - 1;
+                                polyTextureCoords.push_back(textureCoords[textureCoordsIndex]);
+                            }
                         }
+                    }
+                    
+                    // Triangularize the polygons
+                    for (int i = 0; i < polyVertices.size() - 2; i++)
+                    {
+                        std::array<Vertex*, 3> triVertices = { polyVertices[i], polyVertices[i + 1], polyVertices[i + 2] };
+                        std::array<sf::Vector2f*, 3> triTextureCoords = { polyTextureCoords[i], polyTextureCoords[i + 1], polyTextureCoords[i + 2] };
                         
-                        Vertex* v1 = vertices[polygonVertices[0]];
-                        Vertex* v2 = vertices[polygonVertices[1]];
-                        Vertex* v3 = vertices[polygonVertices[2]];
+                        std::cout << "Made triangle at: " << triVertices[i]->getWorldPosition().x << ", " << triVertices[i + 1]->getWorldPosition().x << ", " << triVertices[i + 2]->getWorldPosition().x << std::endl;
                         
-                        Polygon* newPoly = new Polygon(polyVertices, polyTextureCoords);
-                        
+                        Polygon* newPoly = new Polygon(triVertices, triTextureCoords);
                         polygons.push_back(newPoly);
                     }
                 }
             }
         }
     }
-    
-    for (int i = 0; i < textureCoords.size(); i++)
-    {
-        //std::cout << "#" << i + 1 << ": " << textureCoords[i]->x << ", " << textureCoords[i]->y << std::endl;
-    }
-    
-    for (int i = 0; i < polygons.size(); i++)
-    {
-        std::cout << "Poly:\n(" << polygons[i]->getTextureCoords()[0]->x << ", " << polygons[i]->getTextureCoords()[0]->y << ")\n(" << polygons[i]->getTextureCoords()[1]->x << ", " << polygons[i]->getTextureCoords()[1]->y << ")\n(" << polygons[i]->getTextureCoords()[2]->x << ", " << polygons[i]->getTextureCoords()[2]->y << ")" << std::endl;
-    }
-    
 }
 
 std::vector<Vertex*>& Mesh::getVertices()
