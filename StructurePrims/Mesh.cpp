@@ -89,10 +89,8 @@ Mesh::Mesh()
                     // Triangularize the polygons
                     for (int i = 0; i < polyVertices.size() - 2; i++)
                     {
-                        std::array<Vertex*, 3> triVertices = { polyVertices[i], polyVertices[i + 1], polyVertices[i + 2] };
-                        std::array<sf::Vector2f*, 3> triTextureCoords = { polyTextureCoords[i], polyTextureCoords[i + 1], polyTextureCoords[i + 2] };
-                        
-                        std::cout << "Made triangle at: " << triVertices[i]->getWorldPosition().x << ", " << triVertices[i + 1]->getWorldPosition().x << ", " << triVertices[i + 2]->getWorldPosition().x << std::endl;
+                        std::array<Vertex*, 3> triVertices = { polyVertices[0], polyVertices[i + 1], polyVertices[i + 2] };
+                        std::array<sf::Vector2f*, 3> triTextureCoords = { polyTextureCoords[0], polyTextureCoords[i + 1], polyTextureCoords[i + 2] };
                         
                         Polygon* newPoly = new Polygon(triVertices, triTextureCoords);
                         polygons.push_back(newPoly);
