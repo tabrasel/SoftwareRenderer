@@ -19,7 +19,7 @@ class Camera
         sf::Texture view;
         sf::Vector2f viewSize;
         sf::Vector2f fov;
-        sf::Vector2f focalLength;
+        sf::Vector2f frustumStep, focalLength;
         double nearPlane;
         sf::Vector2i lastMousePos;
         sf::Image texture;
@@ -31,6 +31,7 @@ class Camera
         void viewScene(Scene& scene);
         void clearView();
         void drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge);
+        bool triangleInFrustum(Vertex* top, Vertex* mid, Vertex* bot);
         void putPixel(int x, int y, sf::Color& color);
         bool polygonLeftHanded(Vertex& top, Vertex& v2, Vertex& v3);
         sf::Vector3f& getPosition();

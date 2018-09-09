@@ -16,17 +16,22 @@ Camera::Camera()
     upward = sf::Vector3f(0.0, 1.0, 0.0);
     
     fov = sf::Vector2f(1.57, 1.2);
-    viewSize = sf::Vector2f(400, 255);
-    focalLength = sf::Vector2f((viewSize.x / 2) / tan(fov.x / 2), (viewSize.y / 2) / tan(fov.y / 2));
+    //fov = sf::Vector2f(1.5707, 1.5707);
+    viewSize = sf::Vector2f(800, 510);
+    
+   
+    
+    frustumStep = sf::Vector2f(tan(fov.x / 2), tan(fov.y / 2));
+    focalLength = sf::Vector2f((viewSize.x / 2) / frustumStep.x, (viewSize.y / 2) / frustumStep.y);
     
     pixels = new sf::Uint8[int(viewSize.x * viewSize.y * 4)];
     zBuffer = new double[int(viewSize.x * viewSize.y)];
-    nearPlane = 0.5;
+    nearPlane = 0.2;
     
     sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     lastMousePos = sf::Vector2i(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
     
-    texture.loadFromFile(resourcePath() + "texture.jpg");
+    texture.loadFromFile(resourcePath() + "pizzatex.jpg");
 }
 
 Camera::~Camera()
@@ -100,22 +105,6 @@ void Camera::update()
     }
     
     // Angle
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-    {
-        angle += sf::Vector3f(0.0, -0.05, 0.0);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-    {
-        angle += sf::Vector3f(0.0, 0.05, 0.0);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-    {
-        angle += sf::Vector3f(-0.05, 0.0, 0.0);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-    {
-        angle += sf::Vector3f(0.05, 0.0, 0.0);
-    }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
     {
         angle += sf::Vector3f(0.0, 0.0, 0.05);
@@ -130,7 +119,7 @@ void Camera::update()
         sf::Vector2i mouseDelta(sf::Mouse::getPosition().x - 1280, sf::Mouse::getPosition().y - 1600 - 800);
         lastMousePos.x = sf::Mouse::getPosition().x;
         lastMousePos.y = sf::Mouse::getPosition().y;
-        angle += sf::Vector3f(mouseDelta.y * 0.002, mouseDelta.x * 0.002, 0.0);
+        angle += sf::Vector3f(mouseDelta.y * 0.001, mouseDelta.x * 0.001, 0.0);
         sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     }
     
@@ -224,30 +213,28 @@ void Camera::viewScene(Scene& scene)
         mid->setTextureCoords(*(polygon->getTextureCoords()[1]));
         bot->setTextureCoords(*(polygon->getTextureCoords()[2]));
         
-        //std::cout << "Poly UV: (" << top->getTextureCoords().x << ", " << top->getTextureCoords().y << ") (" << mid->getTextureCoords().x << ", " << mid->getTextureCoords().y << ") (" << bot->getTextureCoords().x << ", " << bot->getTextureCoords().y << ")" << std::endl;
-        
-        if (top->getCameraPosition().z > nearPlane && mid->getCameraPosition().z > nearPlane && bot->getCameraPosition().z > nearPlane)
+        if (triangleInFrustum(top, mid, bot))
         {
+            // Determine if triangle is front or back facing
             sf::Vector3f edge1 = sf::Vector3f(mid->getWorldPosition().x - top->getWorldPosition().x,
                                               mid->getWorldPosition().y - top->getWorldPosition().y,
                                               mid->getWorldPosition().z - top->getWorldPosition().z);
             sf::Vector3f edge2 = sf::Vector3f(bot->getWorldPosition().x - top->getWorldPosition().x,
                                               bot->getWorldPosition().y - top->getWorldPosition().y,
                                               bot->getWorldPosition().z - top->getWorldPosition().z);
-            
             float normalX = edge1.y * edge2.z - edge1.z * edge2.y;
             float normalY = edge1.z * edge2.x - edge1.x * edge2.z;
             float normalZ = edge1.x * edge2.y - edge1.y * edge2.x;
             sf::Vector3f normal = sf::Vector3f(normalX, normalY, normalZ);
-            
             sf::Vector3f cameraToPolygon = sf::Vector3f(top->getWorldPosition() - position);
-            
             float angleDiff = normal.x * cameraToPolygon.x + normal.y * cameraToPolygon.y + normal.z * cameraToPolygon.z;
             
+            // Only draw front-facing triangles
             if (angleDiff < 0)
             {
                 drawnPolys++;
                 
+                // Order vertices from top to bottom
                 if (bot->getScreenPosition().y < mid->getScreenPosition().y) {
                     Vertex* temp = mid;
                     mid = bot;
@@ -318,10 +305,6 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
         double sliceVStep = (rightEdge->getV() - leftEdge->getV()) / (rightEdge->getX() - leftEdge->getX());
         double sliceV = leftEdge->getV() + ((std::ceil(leftEdge->getX() - 0.5) + 0.5) - leftEdge->getX()) * sliceVStep;
         
-        //std::cout << "\tRow: " << y - topY << " UStep: " << sliceUStep << std::endl;
-        //std::cout << "\t\tStart U: " << sliceU << std::endl;
-        
-        
         for (int x = startX; x <= endX; x++)
         {
             double z = 1.0 / sliceZ;
@@ -353,11 +336,43 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
             sliceV += sliceVStep;
         }
         
-        //std::cout << "\t\tEnd U: " << sliceU << std::endl;
-        
         leftEdge->step();
         rightEdge->step();
     }
+}
+
+bool Camera::triangleInFrustum(Vertex* top, Vertex* mid, Vertex* bot)
+{
+    // Near plane test
+    if (top->getCameraPosition().z > nearPlane && mid->getCameraPosition().z > nearPlane && bot->getCameraPosition().z > nearPlane)
+    {
+        // Right plane test
+        if (top->getCameraPosition().x <= frustumStep.x * top->getCameraPosition().z &&
+            mid->getCameraPosition().x <= frustumStep.x * mid->getCameraPosition().z &&
+            bot->getCameraPosition().x <= frustumStep.x * bot->getCameraPosition().z)
+        {
+            // Left plane test
+            if (top->getCameraPosition().x >= -frustumStep.x * top->getCameraPosition().z &&
+                mid->getCameraPosition().x >= -frustumStep.x * mid->getCameraPosition().z &&
+                bot->getCameraPosition().x >= -frustumStep.x * bot->getCameraPosition().z)
+            {
+                // Top plane test
+                if (top->getCameraPosition().y <= frustumStep.y * top->getCameraPosition().z &&
+                    mid->getCameraPosition().y <= frustumStep.y * mid->getCameraPosition().z &&
+                    bot->getCameraPosition().y <= frustumStep.y * bot->getCameraPosition().z)
+                {
+                    // Bottom plane test
+                    if (top->getCameraPosition().y >= -frustumStep.y * top->getCameraPosition().z &&
+                        mid->getCameraPosition().y >= -frustumStep.y * mid->getCameraPosition().z &&
+                        bot->getCameraPosition().y >= -frustumStep.y * bot->getCameraPosition().z)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
 }
 
 void Camera::putPixel(int x, int y, sf::Color& color)

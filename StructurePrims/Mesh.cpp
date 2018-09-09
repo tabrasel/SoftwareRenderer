@@ -55,8 +55,6 @@ Mesh::Mesh()
                     }
                 } else if (elementType == "f")
                 {
-                    std::cout << line << std::endl;
-                    
                     std::vector<Vertex*> polyVertices;
                     std::vector<sf::Vector2f*> polyTextureCoords;
                     
