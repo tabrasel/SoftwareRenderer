@@ -10,7 +10,7 @@
 
 Mesh::Mesh()
 {
-    std::string fileName = "female.obj";
+    std::string fileName = "teapot.obj";
     
     std::string line;
     std::ifstream objFile(resourcePath() + fileName);
@@ -81,6 +81,12 @@ Mesh::Mesh()
                                 int textureCoordsIndex = std::stoi(vertexAttr.substr(slashIndex1 + 1, vertexAttr.length())) - 1;
                                 polyTextureCoords.push_back(textureCoords[textureCoordsIndex]);
                             }
+                        } else {
+                            // If there is only one vertex attribute index (or none at all)
+                            sf::Vector2f* newTextureCoords = new sf::Vector2f(0.0, 0.0);
+                            polyTextureCoords.push_back(newTextureCoords);
+                            int vertexPositionIndex = std::stoi(lineParts[i].substr(0, lineParts[i].size())) - 1;
+                            polyVertices.push_back(vertices[vertexPositionIndex]);
                         }
                     }
                     

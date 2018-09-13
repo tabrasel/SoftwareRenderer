@@ -22,8 +22,8 @@ int main(int, char const**)
     text.setPosition(0, 0);
     text.scale(0.25, 0.25);
     
-    const int CANVAS_WIDTH = 800;
-    const int CANVAS_HEIGHT = 510;
+    const int CANVAS_WIDTH = 400;
+    const int CANVAS_HEIGHT = 255;
     
     sf::RenderWindow window(sf::VideoMode(CANVAS_WIDTH, CANVAS_HEIGHT), "Software Renderer");
     window.setVerticalSyncEnabled(true);

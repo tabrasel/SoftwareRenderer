@@ -15,11 +15,8 @@ Camera::Camera()
     sideways = sf::Vector3f(1.0, 0.0, 0.0);
     upward = sf::Vector3f(0.0, 1.0, 0.0);
     
-    fov = sf::Vector2f(1.57, 1.2);
-    //fov = sf::Vector2f(1.5707, 1.5707);
-    viewSize = sf::Vector2f(800, 510);
-    
-   
+    fov = sf::Vector2f(1.570796, 1.2);
+    viewSize = sf::Vector2f(400, 255);
     
     frustumStep = sf::Vector2f(tan(fov.x / 2), tan(fov.y / 2));
     focalLength = sf::Vector2f((viewSize.x / 2) / frustumStep.x, (viewSize.y / 2) / frustumStep.y);
