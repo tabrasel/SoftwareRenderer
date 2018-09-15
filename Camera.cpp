@@ -27,8 +27,6 @@ Camera::Camera()
     
     sf::Mouse::setPosition(sf::Vector2i(1280, 800));
     lastMousePos = sf::Vector2i(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
-    
-    texture.loadFromFile(resourcePath() + "pizzatex.jpg");
 }
 
 Camera::~Camera()
@@ -169,11 +167,11 @@ void Camera::viewScene(Scene& scene)
         }
     }
     
-    
     // Draw meshes
     Mesh mesh = scene.getMesh();
     std::vector<Vertex*> vertices = mesh.getVertices();
     std::vector<Polygon*> polygons = mesh.getPolygons();
+    sf::Image meshTexture = mesh.getTexture();
     
     // Transform vertices to camera and screen coordinates
     for (int i = 0; i < vertices.size(); i++)
@@ -198,7 +196,6 @@ void Camera::viewScene(Scene& scene)
     
     for (int i = 0; i < polygons.size(); i++)
     {
-        
         Polygon* polygon = polygons[i];
         
         Vertex* top = polygon->getVertices()[0];
@@ -266,7 +263,7 @@ void Camera::viewScene(Scene& scene)
                 }
                 
                 // Draw top triangle
-                drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge);
+                drawTriangleHalf((int)topToMid.getStartY(), (int)topToMid.getEndY(), leftEdge, rightEdge, meshTexture);
                 
                 // Determine left and right edges of bottom triangle
                 leftEdge = &midToBot;
@@ -278,14 +275,14 @@ void Camera::viewScene(Scene& scene)
                 }
                 
                 // Draw bottom triangle
-                drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge);
+                drawTriangleHalf((int)midToBot.getStartY(), (int)midToBot.getEndY(), leftEdge, rightEdge, meshTexture);
             }
         }
         
     }
 }
 
-void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge)
+void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* rightEdge, sf::Image& texture)
 {
     for (int y = topY; y < bottomY; y++)
     {
@@ -304,25 +301,17 @@ void Camera::drawTriangleHalf(int topY, int bottomY, Edge* leftEdge, Edge* right
         
         for (int x = startX; x <= endX; x++)
         {
-            double z = 1.0 / sliceZ;
-            double u = sliceU / sliceZ;
-            double v = sliceV / sliceZ;
-
-            int index = y * viewSize.x + x;
-            
+            // Only draw pixel when it is within the window
             if (x >= 0 && x < viewSize.x && y >= 0 && y < viewSize.y)
             {
+                double z = 1.0 / sliceZ;
+                int index = y * viewSize.x + x;
+
+                // Depthbuffer test
                 if (z < zBuffer[index]) {
-                    double k = z * 50;
-                    if (k < 0) {
-                        k = 0;
-                    }
-                    if (k > 255) {
-                        k = 255;
-                    }
-                    
+                    double u = sliceU / sliceZ;
+                    double v = sliceV / sliceZ;
                     sf::Color texColor(texture.getPixel(std::floor(u * texture.getSize().x), std::floor(v * texture.getSize().y)));
-                    //sf::Color fillColor(k, 0, 255);
                     putPixel(x, y, texColor);
                     zBuffer[index] = z;
                 }

@@ -10,7 +10,9 @@
 
 Mesh::Mesh()
 {
-    std::string fileName = "teapot.obj";
+    texture.loadFromFile(resourcePath() + "texture_1.png");
+    
+    std::string fileName = "pinkmap.obj";
     
     std::string line;
     std::ifstream objFile(resourcePath() + fileName);
@@ -113,4 +115,9 @@ std::vector<Vertex*>& Mesh::getVertices()
 std::vector<Polygon*>& Mesh::getPolygons()
 {
     return polygons;
+}
+
+sf::Image& Mesh::getTexture()
+{
+    return texture;
 }
